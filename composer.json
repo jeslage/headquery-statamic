@@ -1,0 +1,51 @@
+{
+  "name": "headquery/statamic",
+  "description": "Statamic addon for headquery: exports the content model for typed JavaScript clients of the Statamic REST API.",
+  "type": "statamic-addon",
+  "license": "MIT",
+  "homepage": "https://github.com/jeslage/headquery",
+  "support": {
+    "issues": "https://github.com/jeslage/headquery/issues",
+    "source": "https://github.com/jeslage/headquery/tree/main/packages/php/statamic"
+  },
+  "keywords": ["statamic", "headless", "rest", "typescript", "codegen"],
+  "require": {
+    "php": "^8.2",
+    "statamic/cms": "^5.0 || ^6.0"
+  },
+  "require-dev": {
+    "opis/json-schema": "^2.3",
+    "orchestra/testbench": "^9.0 || ^10.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Headquery\\Statamic\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Headquery\\Statamic\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "statamic": {
+      "name": "Headquery",
+      "description": "Schema export for typed headquery clients"
+    },
+    "laravel": {
+      "providers": ["Headquery\\Statamic\\ServiceProvider"]
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "config": {
+    "allow-plugins": {
+      "pixelfear/composer-dist-plugin": true
+    },
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@headquery-internal/php-statamic",
+  "private": true,
+  "description": "Turborepo wrapper so the Composer package takes part in the task graph. Not published to npm.",
+  "scripts": {
+    "test": "composer test"
+  }
+}
