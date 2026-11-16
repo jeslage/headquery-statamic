@@ -36,7 +36,7 @@ class ContractTest extends TestCase
 
         $types = [
             'text', 'textarea', 'markdown', 'integer', 'float', 'toggle', 'date', 'select', 'checkboxes',
-            'entries', 'terms', 'users', 'assets', 'bard', 'replicator', 'grid', 'group', 'table', 'list', 'seo_pro',
+            'entries', 'terms', 'users', 'assets', 'bard', 'replicator', 'grid', 'group', 'table', 'list', 'link', 'seo_pro',
         ];
         $config = [
             'options' => ['a', 'b'],

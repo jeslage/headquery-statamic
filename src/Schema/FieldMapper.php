@@ -69,7 +69,7 @@ class FieldMapper
 
         return match ($type) {
             'text' => ($config['input_type'] ?? null) === 'number' ? ['type' => 'number'] : ['type' => 'string'],
-            'textarea', 'markdown', 'code', 'slug', 'color', 'link', 'video', 'time', 'template', 'html', 'icon' => ['type' => 'string'],
+            'textarea', 'markdown', 'code', 'slug', 'color', 'video', 'time', 'template', 'html', 'icon' => ['type' => 'string'],
             'integer' => ['type' => 'number', 'integer' => true],
             'float', 'range' => ['type' => 'number'],
             'toggle' => ['type' => 'boolean'],
@@ -81,6 +81,8 @@ class FieldMapper
             'users' => $this->relation('user', null, ! $single()),
             // Assets limit with `max_files`, not `max_items` like the relationship fieldtypes.
             'assets' => ['type' => 'asset', 'multiple' => (int) ($config['max_files'] ?? 0) !== 1],
+            // Entries are always selectable; assets only with a `container`.
+            'link' => ['type' => 'link', 'targets' => empty($config['container']) ? ['entry'] : ['entry', 'asset']],
             'bard' => $this->bard($config, $nested),
             'replicator' => $this->blocks($config, $nested),
             'grid' => ['type' => 'array', 'items' => $this->object($config['fields'] ?? [], $nested)],

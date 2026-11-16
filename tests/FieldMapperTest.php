@@ -29,6 +29,8 @@ class FieldMapperTest extends TestCase
             'integer' => ['integer', [], ['type' => 'number', 'integer' => true]],
             'toggle' => ['toggle', [], ['type' => 'boolean']],
             'bard' => ['bard', [], ['type' => 'richtext']],
+            'link' => ['link', [], ['type' => 'link', 'targets' => ['entry']]],
+            'link with assets' => ['link', ['container' => 'assets'], ['type' => 'link', 'targets' => ['entry', 'asset']]],
             'date with time' => ['date', ['time_enabled' => true], ['type' => 'date', 'withTime' => true]],
             'unknown addon type' => ['seo_pro', [], ['type' => 'unknown']],
         ];
