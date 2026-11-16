@@ -9,6 +9,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Nav;
 use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
+use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Statamic\Statamic;
@@ -49,7 +50,7 @@ class SchemaExporter
             if ($config === null) {
                 continue;
             }
-            $resource = $this->resource((string) $collection->title(), $collection->entryBlueprints(), $config);
+            $resource = $this->blueprintResource((string) $collection->title(), $collection->entryBlueprints(), $config);
             if ($collection->hasStructure()) {
                 // Structured collections can be fetched as a page tree (GET /collections/{c}/tree).
                 $structure = $collection->structure();
@@ -66,7 +67,7 @@ class SchemaExporter
             if ($config === null) {
                 continue;
             }
-            $resources['taxonomy'][$taxonomy->handle()] = $this->resource(
+            $resources['taxonomy'][$taxonomy->handle()] = $this->blueprintResource(
                 (string) $taxonomy->title(),
                 $taxonomy->termBlueprints(),
                 $config,
@@ -78,10 +79,9 @@ class SchemaExporter
             if ($config === null) {
                 continue;
             }
-            $blueprint = $set->blueprint();
             $resources['global'][$set->handle()] = [
                 'title' => (string) $set->title(),
-                'fields' => $this->mergeBlueprints($blueprint ? collect([$blueprint]) : collect(), []),
+                'fields' => $this->blueprintFields($set->blueprint(), []),
             ];
         }
 
@@ -89,10 +89,9 @@ class SchemaExporter
             if ($this->resourceConfig('navs', $nav->handle()) === null) {
                 continue;
             }
-            $blueprint = $nav->blueprint();
             $navigation = [
                 'title' => (string) $nav->title(),
-                'fields' => $this->mergeBlueprints($blueprint ? collect([$blueprint]) : collect(), []),
+                'fields' => $this->blueprintFields($nav->blueprint(), []),
                 // Entries of these collections can be linked as pages; the API returns their fields too.
                 'collections' => $nav->collections()->map->handle()->sort()->values()->all(),
             ];
@@ -107,10 +106,9 @@ class SchemaExporter
             if ($config === null) {
                 continue;
             }
-            $blueprint = $container->blueprint();
             $resources['assetContainer'][$container->handle()] = $this->resource(
                 (string) $container->title(),
-                $blueprint ? collect([$blueprint]) : collect(),
+                $container->blueprint(),
                 $config,
             );
         }
@@ -155,17 +153,40 @@ class SchemaExporter
     }
 
     /**
-     * A filterable resource: merged blueprint fields, plus the allowed filters
-     * that are not blueprint fields as `systemFilters`.
+     * A filterable resource with one blueprint (asset containers), plus the allowed
+     * filters that are not blueprint fields as `systemFilters`.
      */
-    protected function resource(string $title, LaravelCollection $blueprints, array $config): array
+    protected function resource(string $title, ?Blueprint $blueprint, array $config): array
     {
-        $fields = $this->mergeBlueprints($blueprints, $config);
-        $resource = ['title' => $title, 'fields' => $fields];
+        $fields = $this->blueprintFields($blueprint, $config);
 
+        return $this->withSystemFilters(['title' => $title, 'fields' => $fields], array_keys((array) $fields), $config);
+    }
+
+    /**
+     * A resource whose items each use one of several blueprints (collections, taxonomies).
+     * The API returns only the fields of an item's own blueprint, so they are kept apart.
+     */
+    protected function blueprintResource(string $title, LaravelCollection $blueprints, array $config): array
+    {
+        $exported = [];
+        $handles = [];
+        foreach ($blueprints as $blueprint) {
+            $fields = $this->blueprintFields($blueprint, $config);
+            $exported[$blueprint->handle()] = ['title' => (string) $blueprint->title(), 'fields' => $fields];
+            array_push($handles, ...array_keys((array) $fields));
+        }
+        ksort($exported);
+
+        return $this->withSystemFilters(['title' => $title, 'blueprints' => (object) $exported], $handles, $config);
+    }
+
+    /** Allowed filters that are not blueprint fields, e.g. `date` or `taxonomy:tags`. */
+    protected function withSystemFilters(array $resource, array $fieldHandles, array $config): array
+    {
         $allowedFilters = $this->allowedFilters($config);
         if (is_array($allowedFilters)) {
-            $system = array_values(array_unique(array_diff($allowedFilters, array_keys((array) $fields))));
+            $system = array_values(array_unique(array_diff($allowedFilters, $fieldHandles)));
             sort($system);
             if ($system !== []) {
                 $resource['systemFilters'] = $system;
@@ -175,37 +196,26 @@ class SchemaExporter
         return $resource;
     }
 
-    /**
-     * Union of all blueprints of a resource. A field that only exists in some
-     * blueprints cannot be required.
-     */
-    protected function mergeBlueprints(LaravelCollection $blueprints, array $resourceConfig): object
+    /** Fields of one blueprint keyed by handle, marked filterable per `allowed_filters`. */
+    protected function blueprintFields(?Blueprint $blueprint, array $resourceConfig): object
     {
-        $allowedFilters = $this->allowedFilters($resourceConfig);
-        $merged = [];
-        $seenIn = [];
-
-        foreach ($blueprints as $blueprint) {
-            foreach ($this->mapFields($blueprint->fields()) as $handle => $field) {
-                $merged[$handle] ??= $field;
-                $seenIn[$handle] = ($seenIn[$handle] ?? 0) + 1;
-            }
+        if (! $blueprint) {
+            return (object) [];
         }
 
-        $count = $blueprints->count();
-        foreach ($merged as $handle => &$field) {
-            if ($seenIn[$handle] < $count) {
-                unset($field['required']);
-            }
+        $allowedFilters = $this->allowedFilters($resourceConfig);
+        $fields = $this->mapFields($blueprint->fields());
+
+        foreach ($fields as $handle => &$field) {
             if ($allowedFilters === true || in_array($handle, (array) $allowedFilters, true)) {
                 $field['filterable'] = true;
             }
         }
         unset($field);
 
-        ksort($merged);
+        ksort($fields);
 
-        return (object) $merged;
+        return (object) $fields;
     }
 
     /** @return array<string, array> */

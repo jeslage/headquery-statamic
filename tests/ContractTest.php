@@ -54,7 +54,7 @@ class ContractTest extends TestCase
         $schema = json_decode(json_encode([
             'schemaVersion' => 1,
             'cms' => ['name' => 'statamic'],
-            'resources' => ['collection' => ['test' => ['fields' => (object) $fields]]],
+            'resources' => ['collection' => ['test' => ['blueprints' => ['test' => ['fields' => (object) $fields]]]]],
         ]));
 
         $this->assertValid($schema);

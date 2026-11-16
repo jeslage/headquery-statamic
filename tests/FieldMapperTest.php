@@ -80,6 +80,23 @@ class FieldMapperTest extends TestCase
         $this->assertSame(['quote' => ['text' => ['type' => 'string']]], $replicator['sets']);
     }
 
+    public function test_bard_sets(): void
+    {
+        $nested = fn (array $items) => collect($items)->mapWithKeys(fn ($i) => [$i['handle'] => ['type' => 'string']])->all();
+        $sets = ['main' => ['sets' => ['callout' => ['fields' => [['handle' => 'text']]]]]];
+
+        $this->assertArrayNotHasKey('sets', $this->map('bard', ['sets' => []], $nested));
+        $this->assertArrayNotHasKey('sets', $this->map('bard', ['sets' => $sets, 'save_html' => true], $nested));
+        $this->assertSame(
+            ['callout' => ['text' => ['type' => 'string']]],
+            $this->map('bard', ['sets' => $sets], $nested)['sets'],
+        );
+        $this->assertSame(
+            ['quote' => ['text' => ['type' => 'string']]],
+            $this->map('bard', ['sets' => ['quote' => ['fields' => [['handle' => 'text']]]]], $nested)['sets'],
+        );
+    }
+
     public function test_static_and_dynamic_extensions(): void
     {
         $this->assertSame('string', $this->map('my_type', [], null, ['my_type' => ['type' => 'string']])['type']);

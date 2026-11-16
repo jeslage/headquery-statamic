@@ -81,7 +81,7 @@ class FieldMapper
             'users' => $this->relation('user', null, ! $single()),
             // Assets limit with `max_files`, not `max_items` like the relationship fieldtypes.
             'assets' => ['type' => 'asset', 'multiple' => (int) ($config['max_files'] ?? 0) !== 1],
-            'bard' => ['type' => 'richtext'],
+            'bard' => $this->bard($config, $nested),
             'replicator' => $this->blocks($config, $nested),
             'grid' => ['type' => 'array', 'items' => $this->object($config['fields'] ?? [], $nested)],
             'group' => $this->object($config['fields'] ?? [], $nested),
@@ -149,6 +149,25 @@ class FieldMapper
      */
     protected function blocks(array $config, ?Closure $nested): array
     {
+        return ['type' => 'blocks', 'sets' => $this->sets($config, $nested)];
+    }
+
+    /**
+     * Bard returns an HTML string without sets, and an array of text items and sets with them.
+     * With `save_html` the stored value is an HTML string, so its sets don't matter.
+     */
+    protected function bard(array $config, ?Closure $nested): array
+    {
+        if (empty($config['sets']) || ($config['save_html'] ?? false)) {
+            return ['type' => 'richtext'];
+        }
+
+        return ['type' => 'richtext', 'sets' => $this->sets($config, $nested)];
+    }
+
+    /** Sets of a replicator or Bard field keyed by handle; grouped sets are flattened. */
+    protected function sets(array $config, ?Closure $nested): object
+    {
         $sets = [];
         foreach ((array) ($config['sets'] ?? []) as $handle => $set) {
             if (isset($set['sets']) && is_array($set['sets'])) {
@@ -160,7 +179,7 @@ class FieldMapper
             }
         }
 
-        return ['type' => 'blocks', 'sets' => (object) $sets];
+        return (object) $sets;
     }
 
     protected function isRequired(array $config): bool
