@@ -1,6 +1,6 @@
 {
   "name": "@headquery-internal/php-statamic",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Turborepo wrapper so the Composer package takes part in the task graph, and its version for changesets (php-release.yml tags php-statamic/<version>). Not published to npm.",
   "scripts": {
