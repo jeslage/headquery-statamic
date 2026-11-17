@@ -2,6 +2,7 @@
 
 namespace Headquery\Statamic;
 
+use Headquery\Statamic\Assets\ShallowAsset;
 use Headquery\Statamic\Console\ExportSchemaCommand;
 use Headquery\Statamic\Http\Middleware\AuthorizeSchemaRequest;
 use Headquery\Statamic\Http\SchemaController;
@@ -34,6 +35,9 @@ class ServiceProvider extends AddonServiceProvider
         $this->publishes([
             __DIR__.'/../config/headquery.php' => config_path('headquery.php'),
         ], 'headquery-config');
+
+        // In case ShallowAsset::extend() ran before Statamic bound its asset class.
+        ShallowAsset::bind();
 
         $this->registerSchemaRoute();
     }

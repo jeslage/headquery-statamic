@@ -2,7 +2,9 @@
 
 namespace Headquery\Statamic\Schema;
 
+use Headquery\Statamic\Assets\ShallowAsset;
 use Illuminate\Support\Collection as LaravelCollection;
+use Statamic\Facades\Asset;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Collection;
 use Statamic\Facades\GlobalSet;
@@ -125,18 +127,30 @@ class SchemaExporter
 
     protected function envelope(array $resources): array
     {
-        return [
+        return array_filter([
             'schemaVersion' => self::SCHEMA_VERSION,
             'cms' => ['name' => 'statamic', 'version' => (string) Statamic::version()],
             'generatedAt' => now()->toIso8601ZuluString(),
             'sites' => $this->sites(),
+            'assetKeys' => $this->assetKeys(),
             // Empty maps must encode as {} in JSON, hence the object casts.
             'resources' => (object) array_map(function (array $byHandle) {
                 ksort($byHandle);
 
                 return (object) $byHandle;
             }, $resources),
-        ];
+        ], fn ($value) => $value !== []);
+    }
+
+    /**
+     * Keys that asset fields and asset links carry beyond Statamic's shallow default, from
+     * ShallowAsset::extend() or a project's own asset class (resolved through the container).
+     */
+    protected function assetKeys(): array
+    {
+        $keys = (array) Asset::make()->shallowAugmentedArrayKeys();
+
+        return array_values(array_diff(array_unique(array_map('strval', $keys)), ShallowAsset::DEFAULT_KEYS));
     }
 
     /**
